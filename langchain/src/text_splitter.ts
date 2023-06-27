@@ -131,7 +131,7 @@ export abstract class TextSplitter implements TextSplitterParams {
   }
 
   private joinDocs(docs: string[], separator: string): string | null {
-    const text = docs.join(separator).trim();
+    const text = docs.join(separator);
     return text === "" ? null : text;
   }
 
