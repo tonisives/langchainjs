@@ -10,12 +10,12 @@ export interface RecursiveUrlLoaderOptions {
   timeout?: number;
   preventOutside?: boolean;
   callerOptions?: ConstructorParameters<typeof AsyncCaller>[0];
+  debug?: boolean
 }
 
 export class RecursiveUrlLoader
   extends BaseDocumentLoader
-  implements DocumentLoader
-{
+  implements DocumentLoader {
   private caller: AsyncCaller;
 
   private url: string;
@@ -29,6 +29,8 @@ export class RecursiveUrlLoader
   private timeout: number;
 
   private preventOutside: boolean;
+
+  private debug: boolean;
 
   constructor(url: string, options: RecursiveUrlLoaderOptions) {
     super();
@@ -45,6 +47,7 @@ export class RecursiveUrlLoader
     this.maxDepth = options.maxDepth ?? 2;
     this.timeout = options.timeout ?? 10000;
     this.preventOutside = options.preventOutside ?? true;
+    this.debug = options.debug ?? false;
   }
 
   private async fetchWithTimeout(
@@ -156,8 +159,9 @@ export class RecursiveUrlLoader
   ): Promise<Document[]> {
     if (depth >= this.maxDepth) return [];
 
+    this.logDebug(`getChildUrlsRecursive ${inputUrl}`)
+
     let url = inputUrl;
-    if (!inputUrl.endsWith("/")) url += "/";
 
     const isExcluded = this.excludeDirs.some((exDir) => url.startsWith(exDir));
     if (isExcluded) return [];
@@ -171,29 +175,30 @@ export class RecursiveUrlLoader
     }
 
     const childUrls: string[] = this.getChildLinks(res, url);
+    this.logDebug(`child urls ${childUrls.join(", ")}`)
 
-    const results = await Promise.all(
-      childUrls.map((childUrl) =>
-        (async () => {
-          if (visited.has(childUrl)) return null;
-          visited.add(childUrl);
+    const fetch = async (childUrl: string) => {
+      if (visited.has(childUrl)) return null;
 
-          const childDoc = await this.getUrlAsDoc(childUrl);
-          if (!childDoc) return null;
+      visited.add(childUrl);
 
-          if (childUrl.endsWith("/")) {
-            const childUrlResponses = await this.getChildUrlsRecursive(
-              childUrl,
-              visited,
-              depth + 1
-            );
-            return [childDoc, ...childUrlResponses];
-          }
+      const childDoc = await this.getUrlAsDoc(childUrl);
+      if (!childDoc) return null
 
-          return [childDoc];
-        })()
+      const childUrlResponses = await this.getChildUrlsRecursive(
+        childUrl,
+        visited,
+        depth + 1
       )
-    );
+      return [childDoc, ...childUrlResponses];
+    }
+
+    let results: Document[][] = [];
+    for (let i = 0; i < childUrls.length; i += 1) {
+      let childUrl = childUrls[i];
+      let docs = await fetch(childUrl);
+      if (docs) results = results.concat(docs);
+    }
 
     return results.flat().filter((docs) => docs !== null) as Document[];
   }
@@ -207,5 +212,9 @@ export class RecursiveUrlLoader
       ...(await this.getChildUrlsRecursive(this.url, new Set([this.url])))
     );
     return docs;
+  }
+
+  logDebug(log: string) {
+    if (this.debug) console.log(log)
   }
 }
