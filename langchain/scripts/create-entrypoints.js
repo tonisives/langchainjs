@@ -56,7 +56,8 @@ const entrypoints = {
   "llms/raycast": "llms/raycast",
   "llms/ollama": "llms/ollama",
   "llms/replicate": "llms/replicate",
-  "llms/googlevertexai": "llms/googlevertexai",
+  "llms/googlevertexai": "llms/googlevertexai/index",
+  "llms/googlevertexai/web": "llms/googlevertexai/web",
   "llms/googlepalm": "llms/googlepalm",
   "llms/sagemaker_endpoint": "llms/sagemaker_endpoint",
   "llms/bedrock": "llms/bedrock",
@@ -82,6 +83,7 @@ const entrypoints = {
   "vectorstores/qdrant": "vectorstores/qdrant",
   "vectorstores/supabase": "vectorstores/supabase",
   "vectorstores/opensearch": "vectorstores/opensearch",
+  "vectorstores/pgvector": "vectorstores/pgvector",
   "vectorstores/milvus": "vectorstores/milvus",
   "vectorstores/prisma": "vectorstores/prisma",
   "vectorstores/typeorm": "vectorstores/typeorm",
@@ -122,6 +124,7 @@ const entrypoints = {
   "document_loaders/web/github": "document_loaders/web/github",
   "document_loaders/web/notiondb": "document_loaders/web/notiondb",
   "document_loaders/web/notionapi": "document_loaders/web/notionapi",
+  "document_loaders/web/pdf": "document_loaders/web/pdf",
   "document_loaders/web/recursive_url": "document_loaders/web/recursive_url",
   "document_loaders/web/s3": "document_loaders/web/s3",
   "document_loaders/web/sonix_audio": "document_loaders/web/sonix_audio",
@@ -141,7 +144,8 @@ const entrypoints = {
   "document_loaders/fs/csv": "document_loaders/fs/csv",
   "document_loaders/fs/notion": "document_loaders/fs/notion",
   "document_loaders/fs/unstructured": "document_loaders/fs/unstructured",
-  "document_loaders/fs/openai_whisper_audio": "document_loaders/fs/openai_whisper_audio",
+  "document_loaders/fs/openai_whisper_audio":
+    "document_loaders/fs/openai_whisper_audio",
   // document_transformers
   "document_transformers/html_to_text": "document_transformers/html_to_text",
   "document_transformers/mozilla_readability":
@@ -152,7 +156,8 @@ const entrypoints = {
   "chat_models/base": "chat_models/base",
   "chat_models/openai": "chat_models/openai",
   "chat_models/anthropic": "chat_models/anthropic",
-  "chat_models/googlevertexai": "chat_models/googlevertexai",
+  "chat_models/googlevertexai": "chat_models/googlevertexai/index",
+  "chat_models/googlevertexai/web": "chat_models/googlevertexai/web",
   "chat_models/googlepalm": "chat_models/googlepalm",
   "chat_models/baiduwenxin": "chat_models/baiduwenxin",
   "chat_models/ollama": "chat_models/ollama",
@@ -163,7 +168,7 @@ const entrypoints = {
   "schema/output_parser": "schema/output_parser",
   "schema/query_constructor": "schema/query_constructor",
   "schema/retriever": "schema/retriever",
-  "schema/runnable": "schema/runnable",
+  "schema/runnable": "schema/runnable/index",
   "schema/storage": "schema/storage",
   // sql_db
   sql_db: "sql_db",
@@ -182,6 +187,7 @@ const entrypoints = {
   "retrievers/databerry": "retrievers/databerry",
   "retrievers/contextual_compression": "retrievers/contextual_compression",
   "retrievers/document_compressors": "retrievers/document_compressors/index",
+  "retrievers/multi_query": "retrievers/multi_query",
   "retrievers/multi_vector": "retrievers/multi_vector",
   "retrievers/parent_document": "retrievers/parent_document",
   "retrievers/time_weighted": "retrievers/time_weighted",
@@ -198,6 +204,7 @@ const entrypoints = {
   "retrievers/vespa": "retrievers/vespa",
   // cache
   cache: "cache/index",
+  "cache/cloudflare_kv": "cache/cloudflare_kv",
   "cache/momento": "cache/momento",
   "cache/redis": "cache/redis",
   "cache/ioredis": "cache/ioredis",
@@ -207,6 +214,7 @@ const entrypoints = {
   "stores/doc/gcs": "stores/doc/gcs",
   "stores/file/in_memory": "stores/file/in_memory",
   "stores/file/node": "stores/file/node",
+  "stores/message/cloudflare_d1": "stores/message/cloudflare_d1",
   "stores/message/in_memory": "stores/message/in_memory",
   "stores/message/dynamodb": "stores/message/dynamodb",
   "stores/message/firestore": "stores/message/firestore",
@@ -233,6 +241,10 @@ const entrypoints = {
     "experimental/multimodal_embeddings/googlevertexai",
   "experimental/chat_models/anthropic_functions":
     "experimental/chat_models/anthropic_functions",
+  "experimental/chat_models/bittensor":
+    "experimental/chat_models/bittensor",
+  "experimental/llms/bittensor":
+    "experimental/llms/bittensor",
   // evaluation
   evaluation: "evaluation/index",
 };
@@ -272,6 +284,7 @@ const requiresOptionalDependency = [
   "llms/load",
   "llms/cohere",
   "llms/googlevertexai",
+  "llms/googlevertexai/web",
   "llms/googlepalm",
   "llms/hf",
   "llms/raycast",
@@ -295,6 +308,7 @@ const requiresOptionalDependency = [
   "vectorstores/qdrant",
   "vectorstores/supabase",
   "vectorstores/opensearch",
+  "vectorstores/pgvector",
   "vectorstores/typeorm",
   "vectorstores/milvus",
   "vectorstores/myscale",
@@ -319,6 +333,7 @@ const requiresOptionalDependency = [
   "document_loaders/web/imsdb",
   "document_loaders/web/figma",
   "document_loaders/web/github",
+  "document_loaders/web/pdf",
   "document_loaders/web/notiondb",
   "document_loaders/web/notionapi",
   "document_loaders/web/recursive_url",
@@ -341,6 +356,7 @@ const requiresOptionalDependency = [
   "document_transformers/html_to_text",
   "document_transformers/mozilla_readability",
   "chat_models/googlevertexai",
+  "chat_models/googlevertexai/web",
   "chat_models/googlepalm",
   "sql_db",
   "retrievers/amazon_kendra",
@@ -356,12 +372,14 @@ const requiresOptionalDependency = [
   "output_parsers/expression",
   "chains/query_constructor",
   "chains/query_constructor/ir",
+  "cache/cloudflare_kv",
   "cache/momento",
   "cache/redis",
   "cache/ioredis",
   "cache/upstash_redis",
   "stores/doc/gcs",
   "stores/file/node",
+  "stores/message/cloudflare_d1",
   "stores/message/dynamodb",
   "stores/message/firestore",
   "stores/message/momento",
@@ -376,6 +394,7 @@ const requiresOptionalDependency = [
   "hub",
   "experimental/multimodal_embeddings/googlevertexai",
   "experimental/chat_models/anthropic_functions",
+  "experimental/llms/bittensor",
 ];
 
 // List of test-exports-* packages which we use to test that the exports field
@@ -397,6 +416,7 @@ const testExports = [
   ["test-exports-cf", (p) => `export * from "langchain/${p}";`],
   ["test-exports-vercel", (p) => `export * from "langchain/${p}";`],
   ["test-exports-vite", (p) => `export * from "langchain/${p}";`],
+  ["test-exports-bun", (p) => `export * from "langchain/${p}";`],
 ];
 
 const updateJsonFile = (relativePath, updateFunction) => {
@@ -482,7 +502,10 @@ const updateConfig = () => {
   testExports.forEach(([pkg, importStatement]) => {
     const contents =
       entrypointsToTest.map((key) => importStatement(key)).join("\n") + "\n";
-    fs.writeFileSync(`../environment_tests/${pkg}/src/entrypoints.js`, contents);
+    fs.writeFileSync(
+      `../environment_tests/${pkg}/src/entrypoints.js`,
+      contents
+    );
   });
 };
 
