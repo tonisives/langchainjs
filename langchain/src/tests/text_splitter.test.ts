@@ -486,3 +486,77 @@ test("Test lines loc on iterative text splitter.", async () => {
 
   expect(docs).toEqual(expectedDocs);
 });
+
+
+test("Test lines loc counts correct amount of new lines.", async () => {
+  // loc logic:
+  // start from 1.
+  // locTo is the last line inclusive. This means 1 line of text is locFrom 1 to locTo 1
+
+  let startNewLineCount = 2;
+  let startNewLines = "";
+  for (let i = 0; i < startNewLineCount; i++) startNewLines += "\n";
+
+  const text = `${startNewLines}Hi.\nI'm Harrison.\nHi.\nI'm Harrison.\n\nHi.\nI'm Harrison.\nHi.\nI'm Harrison.\n\n`;
+
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: startNewLineCount + 17,
+    chunkOverlap: 0,
+  });
+
+  const docs = await splitter.createDocuments([text], []);
+
+  const expectedDocs = [
+    new Document({
+      pageContent: `Hi.\nI'm Harrison.`, // 4 lines (from 1 to 4)
+      metadata: { loc: { lines: { from: 3, to: 4 } } },
+    }),
+    new Document({
+      pageContent: `Hi.\nI'm Harrison.`,
+      // starting from 4, because same last doc didn't end with \n
+      // ending with 6, because splitText doesn't include the last \n
+      metadata: { loc: { lines: { from: 5, to: 6 } } },
+    }),
+    new Document({
+      pageContent: `Hi.\nI'm Harrison.`,
+      metadata: { loc: { lines: { from: 8, to: 9 } } },
+    }),
+    new Document({
+      pageContent: "Hi.\nI'm Harrison.",
+      metadata: { loc: { lines: { from: 10, to: 11 } } },
+    }),
+  ];
+
+  expect(docs).toEqual(expectedDocs);
+});
+
+test("Returns correct loc for equal block strings", async () => {
+  const text = `\n    {\n    {\n    {\nhello`;
+
+  const splitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 6,
+    chunkOverlap: 0,
+  });
+  const docs = await splitter.createDocuments([text], undefined, undefined);
+
+  const expectedDocs = [
+    new Document({
+      pageContent: "{",
+      metadata: { loc: { lines: { from: 2, to: 2 } } },
+    }),
+    new Document({
+      pageContent: "{",
+      metadata: { loc: { lines: { from: 3, to: 3 } } },
+    }),
+    new Document({
+      pageContent: "{",
+      metadata: { loc: { lines: { from: 4, to: 4 } } },
+    }),
+    new Document({
+      pageContent: "hello",
+      metadata: { loc: { lines: { from: 5, to: 5 } } },
+    }),
+  ];
+
+  expect(docs).toEqual(expectedDocs);
+});
