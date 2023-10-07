@@ -277,6 +277,9 @@
     "text_splitter.cjs",
     "text_splitter.js",
     "text_splitter.d.ts",
+    "text_splitter_newline.cjs",
+    "text_splitter_newline.js",
+    "text_splitter_newline.d.ts",
     "memory.cjs",
     "memory.js",
     "memory.d.ts",
@@ -1645,6 +1648,11 @@
       "types": "./text_splitter.d.ts",
       "import": "./text_splitter.js",
       "require": "./text_splitter.cjs"
+    },
+    "./text_splitter_newline": {
+      "types": "./text_splitter_newline.d.ts",
+      "import": "./text_splitter_newline.js",
+      "require": "./text_splitter_newline.cjs"
     },
     "./memory": {
       "types": "./memory.d.ts",
