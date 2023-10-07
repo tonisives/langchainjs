@@ -53,6 +53,10 @@ export class TextSplitterNewLine
       })
     }
 
+    const getLengthNoWhitespace = (lines: string[]) => {
+      return lines.reduce((acc, curr) => acc + curr.trim().length, 0)
+    }
+
     const getDocsFromText = (text: string) => {
       let builder: Document[] = []
       let lines = text.split("\n")
@@ -65,7 +69,7 @@ export class TextSplitterNewLine
         lineCounter++
 
         let currentPageContent = pageContent.join("\n")
-        let lineWillFillChunk = currentPageContent.length + line.length > (this.chunkSize - this.chunkOverlap)
+        let lineWillFillChunk = getLengthNoWhitespace([...pageContent, line]) > (this.chunkSize - this.chunkOverlap)
 
         // if line + overlap is longer than the chunk, it will be added in next loop with overflown size
         if (lineWillFillChunk && pageContent.length > 0) {

@@ -5,10 +5,10 @@ import { TextSplitterNewLine } from "../text_splitter_newline.js";
 
 test("overlap and lines sol", async () => {
   const splitter = new TextSplitterNewLine({
-    chunkSize: 650,
-    chunkOverlap: 300
+    chunkSize: 550,
+    chunkOverlap: 200
   });
-  let text = fs.readFileSync("./src/tests/tonis/sample.sol").toString()
+  let text = fs.readFileSync("./src/tests/samples/sample.sol").toString()
 
   const docs = await splitter.createDocuments([text], undefined, undefined);
 
@@ -32,7 +32,7 @@ test("overlap and lines md", async () => {
     chunkOverlap: 200
   });
 
-  let text = fs.readFileSync("./src/tests/tonis/sample.md").toString()
+  let text = fs.readFileSync("./src/tests/samples/sample.md").toString()
   const docs = await splitter.createDocuments([text], undefined, undefined);
   printResultToFile("sample.md", docs)
 
@@ -54,6 +54,6 @@ const printResultToFile = (fileName: string, docs: Document[]) => {
     file += `${JSON.stringify(metadata, null, 2)}\n${content}\n`
   }
 
-  fs.mkdirSync("./src/tests/tonis/results", { recursive: true })
-  fs.writeFileSync(`./src/tests/tonis/results/${fileName}.txt`, file)
+  fs.mkdirSync("./src/tests/results", { recursive: true })
+  fs.writeFileSync(`./src/tests/results/${fileName}.txt`, file)
 }
