@@ -10,6 +10,7 @@ export interface TextSplitterParams {
   lengthFunction?:
     | ((text: string) => number)
     | ((text: string) => Promise<number>);
+  trimPageContent?: boolean // whether to trim the final pageContent of the document
 }
 
 export type TextSplitterChunkHeaderOptions = {
@@ -30,6 +31,10 @@ export abstract class TextSplitter
 
   keepSeparator = false;
 
+  private trimOnJoin = true;
+
+  trimPageContent = true;
+
   lengthFunction:
     | ((text: string) => number)
     | ((text: string) => Promise<number>);
@@ -41,16 +46,17 @@ export abstract class TextSplitter
     this.keepSeparator = fields?.keepSeparator ?? this.keepSeparator;
     this.lengthFunction =
       fields?.lengthFunction ?? ((text: string) => text.length);
-    if (this.chunkOverlap >= this.chunkSize) {
+    this.trimPageContent = fields?.trimPageContent ?? this.trimPageContent;
+        if (this.chunkOverlap >= this.chunkSize) {
       throw new Error("Cannot have chunkOverlap >= chunkSize");
     }
   }
 
   async transformDocuments(
     documents: Document[],
-    chunkHeaderOptions: TextSplitterChunkHeaderOptions = {}
+    textSplitterOptions: TextSplitterChunkHeaderOptions = {}
   ): Promise<Document[]> {
-    return this.splitDocuments(documents, chunkHeaderOptions);
+    return this.splitDocuments(documents, textSplitterOptions);
   }
 
   abstract splitText(text: string): Promise<string[]>;
@@ -87,47 +93,42 @@ export abstract class TextSplitter
       chunkOverlapHeader = "(cont'd) ",
       appendChunkOverlapHeader = false,
     } = chunkHeaderOptions;
+
+    let prevTrimOnJoin = this.trimOnJoin;
+    this.trimOnJoin = false;
+
     const documents = new Array<Document>();
     for (let i = 0; i < texts.length; i += 1) {
       const text = texts[i];
       let lineCounterIndex = 1;
-      let prevChunk = null;
-      let indexPrevChunk = -1;
+      let prevChunk: string | null = null;
+      let textTraverser = ""; // used to get the latest index of a chunk if they are the same
+
       for (const chunk of await this.splitText(text)) {
+        textTraverser += chunk;
         let pageContent = chunkHeader;
 
         // we need to count the \n that are in the text before getting removed by the splitting
-        const indexChunk = text.indexOf(chunk, indexPrevChunk + 1);
-        if (prevChunk === null) {
-          const newLinesBeforeFirstChunk = this.numberOfNewLines(
-            text,
-            0,
+        let numberOfIntermediateNewLines = 0;
+        if (prevChunk) {
+          const indexChunk = textTraverser.lastIndexOf(chunk);
+          const indexEndPrevChunk =
+            textTraverser.lastIndexOf(prevChunk) +
+            (await this.lengthFunction(prevChunk));
+          const removedNewlinesFromSplittingText = text.slice(
+            indexEndPrevChunk,
             indexChunk
           );
-          lineCounterIndex += newLinesBeforeFirstChunk;
-        } else {
-          const indexEndPrevChunk =
-            indexPrevChunk + (await this.lengthFunction(prevChunk));
-          if (indexEndPrevChunk < indexChunk) {
-            const numberOfIntermediateNewLines = this.numberOfNewLines(
-              text,
-              indexEndPrevChunk,
-              indexChunk
-            );
-            lineCounterIndex += numberOfIntermediateNewLines;
-          } else if (indexEndPrevChunk > indexChunk) {
-            const numberOfIntermediateNewLines = this.numberOfNewLines(
-              text,
-              indexChunk,
-              indexEndPrevChunk
-            );
-            lineCounterIndex -= numberOfIntermediateNewLines;
-          }
+          numberOfIntermediateNewLines = (
+            removedNewlinesFromSplittingText.match(/\n/g) || []
+          ).length;
           if (appendChunkOverlapHeader) {
             pageContent += chunkOverlapHeader;
           }
         }
-        const newLinesCount = this.numberOfNewLines(chunk);
+
+        lineCounterIndex += numberOfIntermediateNewLines;
+        const newLinesCount = (chunk.match(/\n/g) || []).length;
 
         const loc =
           _metadatas[i].loc && typeof _metadatas[i].loc === "object"
@@ -142,24 +143,126 @@ export abstract class TextSplitter
           loc,
         };
 
-        pageContent += chunk;
+        if (this.trimPageContent)  {
+          pageContent += chunk.trim();
+        }
+        else {
+          pageContent += chunk;
+        }
+        // can happen if last chunk is only new lines
+        if (pageContent === "") continue;
+
         documents.push(
-          new Document({
-            pageContent,
-            metadata: metadataWithLinesNumber,
-          })
+          this.fixLoc(
+            new Document({
+              pageContent,
+              metadata: metadataWithLinesNumber,
+            }),
+            text
+          )
         );
         lineCounterIndex += newLinesCount;
         prevChunk = chunk;
-        indexPrevChunk = indexChunk;
       }
     }
+
+    this.trimOnJoin = prevTrimOnJoin;
     return documents;
   }
 
-  private numberOfNewLines(text: string, start?: number, end?: number) {
-    const textSection = text.slice(start, end);
-    return (textSection.match(/\n/g) || []).length;
+  // find the correct loc by brute force
+  fixLoc(document: Document, fullText: string): Document {
+    let pageContent = document.pageContent;
+
+    // find all the matching page contents in the original text
+    let matches = this.findSubstrings(fullText, pageContent);
+
+    // now find the line numbers for these characters
+    let pageContentCounter = 0;
+    let lineNr = 1;
+    let lineStart = -1;
+    let currentMatchCharIndex: number = Number.MAX_SAFE_INTEGER;
+    let matchedLines: { from: number; to: number }[] = [];
+
+    for (let i = 0; i < fullText.length; i++) {
+      if (matches.some((matchCharIndex) => matchCharIndex === i)) {
+        lineStart = lineNr;
+        currentMatchCharIndex = i;
+      }
+
+      if (
+        i >= currentMatchCharIndex &&
+        i < currentMatchCharIndex + pageContent.length
+      ) {
+        pageContentCounter++;
+
+        if (pageContentCounter === pageContent.length) {
+          let lineEnd = lineNr;
+          if (fullText[i] === "\n") {
+            matchedLines.push({ from: lineStart, to: lineEnd + 1 });
+          }
+          {
+            matchedLines.push({ from: lineStart, to: lineEnd });
+          }
+
+          pageContentCounter = 0;
+          currentMatchCharIndex = -1;
+        }
+      }
+
+      if (fullText[i] === "\n") {
+        lineNr++;
+      }
+    }
+
+    let docMiddle =
+      document.metadata.loc.lines.from +
+      Math.floor(
+        (document.metadata.loc.lines.to - document.metadata.loc.lines.from) / 2
+      );
+
+    // out of these matches, find the closest one to the docMiddle
+    let closestMatch = matchedLines[0];
+    for (let i = 1; i < matchedLines.length; i++) {
+      let match = matchedLines[i];
+      let matchMiddle = match.from + Math.floor((match.to - match.from) / 2);
+      let closestMiddle = closestMatch.from + Math.floor((closestMatch.to - closestMatch.from) / 2);
+      if (
+        Math.abs(matchMiddle - docMiddle) <
+        Math.abs(closestMiddle - docMiddle)
+      ) {
+        closestMatch = match;
+      }
+    }
+
+    if (!closestMatch) {
+      // this happened with a chunk header
+      return document;
+    }
+
+    return new Document({
+      pageContent,
+      metadata: {
+        ...document.metadata,
+        loc: {
+          ...document.metadata.loc,
+          lines: {
+            from: closestMatch.from,
+            to: closestMatch.to,
+          },
+        },
+      },
+    });
+  }
+
+  findSubstrings(str: string, subStr: string) {
+    let indices = [];
+    let idx = str.indexOf(subStr);
+    while (idx != -1) {
+      indices.push(idx);
+      idx = str.indexOf(subStr, idx + 1);
+    }
+    return indices;
   }
 
   async splitDocuments(
@@ -175,7 +278,8 @@ export abstract class TextSplitter
   }
 
   private joinDocs(docs: string[], separator: string): string | null {
-    const text = docs.join(separator).trim();
+    let text = docs.join(separator);
+    if (this.trimOnJoin) text = text.trim();
     return text === "" ? null : text;
   }
 
