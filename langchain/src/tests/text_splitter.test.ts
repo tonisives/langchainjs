@@ -487,7 +487,6 @@ test("Test lines loc on iterative text splitter.", async () => {
   expect(docs).toEqual(expectedDocs);
 });
 
-
 test("Test lines loc counts correct amount of new lines.", async () => {
   // loc logic:
   // start from 1.

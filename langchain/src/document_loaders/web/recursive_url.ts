@@ -10,12 +10,13 @@ export interface RecursiveUrlLoaderOptions {
   timeout?: number;
   preventOutside?: boolean;
   callerOptions?: ConstructorParameters<typeof AsyncCaller>[0];
-  debug?: boolean
+  debug?: boolean;
 }
 
 export class RecursiveUrlLoader
   extends BaseDocumentLoader
-  implements DocumentLoader {
+  implements DocumentLoader
+{
   private caller: AsyncCaller;
 
   private url: string;
@@ -159,7 +160,7 @@ export class RecursiveUrlLoader
   ): Promise<Document[]> {
     if (depth >= this.maxDepth) return [];
 
-    this.logDebug(`getChildUrlsRecursive ${inputUrl}`)
+    this.logDebug(`getChildUrlsRecursive ${inputUrl}`);
 
     let url = inputUrl;
 
@@ -175,7 +176,7 @@ export class RecursiveUrlLoader
     }
 
     const childUrls: string[] = this.getChildLinks(res, url);
-    this.logDebug(`child urls ${childUrls.join(", ")}`)
+    this.logDebug(`child urls ${childUrls.join(", ")}`);
 
     const fetch = async (childUrl: string) => {
       if (visited.has(childUrl)) return null;
@@ -183,15 +184,15 @@ export class RecursiveUrlLoader
       visited.add(childUrl);
 
       const childDoc = await this.getUrlAsDoc(childUrl);
-      if (!childDoc) return null
+      if (!childDoc) return null;
 
       const childUrlResponses = await this.getChildUrlsRecursive(
         childUrl,
         visited,
         depth + 1
-      )
+      );
       return [childDoc, ...childUrlResponses];
-    }
+    };
 
     let results: Document[][] = [];
     for (let i = 0; i < childUrls.length; i += 1) {
@@ -215,6 +216,6 @@ export class RecursiveUrlLoader
   }
 
   logDebug(log: string) {
-    if (this.debug) console.log(log)
+    if (this.debug) console.log(log);
   }
 }
