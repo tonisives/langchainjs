@@ -8,14 +8,20 @@ import { Document } from "./document.js";
 export type TextSplitterNewLineParams = Pick<
   RecursiveCharacterTextSplitterParams,
   "chunkSize" | "chunkOverlap"
->;
+> & {
+  // by default, we don't count whitespace in front of / end of lines towards the chunk size
+  countWhiteSpace?: boolean;
+}
 
 export class TextSplitterNewLine
   extends TextSplitter
-  implements TextSplitterNewLineParams
-{
+  implements TextSplitterNewLineParams {
+
+  countWhiteSpace: boolean = false;
+
   constructor(fields?: Partial<TextSplitterNewLineParams>) {
     super(fields);
+    this.countWhiteSpace = fields?.countWhiteSpace ?? false;
   }
 
   async createDocuments(
@@ -67,10 +73,6 @@ export class TextSplitterNewLine
       });
     };
 
-    const getLengthNoWhitespace = (lines: string[]) => {
-      return lines.reduce((acc, curr) => acc + curr.trim().length, 0);
-    };
-
     const getDocsFromText = (text: string) => {
       let builder: Document[] = [];
       let lines = text.split("\n");
@@ -84,7 +86,7 @@ export class TextSplitterNewLine
 
         let currentPageContent = pageContent.join("\n");
         let lineWillFillChunk =
-          getLengthNoWhitespace([...pageContent, line]) >
+          this.getLengthNoWhitespace([...pageContent, line]) >
           this.chunkSize - this.chunkOverlap;
 
         // if line + overlap is longer than the chunk, it will be added in next loop with overflown size
@@ -115,26 +117,19 @@ export class TextSplitterNewLine
     if (builder.length <= 1) return builder;
 
     for (let i = 1; i < builder.length; i++) {
+      let currLines = builder[i].pageContent.split("\n");
+
+      // let currLength = this.getLengthNoWhitespace(currLines);
+      // console.log(`curr:\n${currLines.join("\n")} \nlength: ${currLength}`);
+
       let prevChunkLines = builder[i - 1].pageContent.split("\n");
-
-      let addedLines = [] as string[];
-
-      for (let j = prevChunkLines.length - 1; j > 0; j--) {
-        let prevLine = prevChunkLines[j];
-        if (
-          addedLines.join("\n").length + prevLine.length >
-          this.chunkOverlap
-        ) {
-          break;
-        }
-
-        addedLines.push(prevLine);
-      }
+      let addedLines = this.getLinesFromPrevChunks(prevChunkLines, currLines);
 
       addedLines = addedLines.reverse();
-
+      let newContent = [...addedLines, ...currLines].join("\n");
+      
       builder[i] = {
-        pageContent: `${addedLines.join("\n")}\n${builder[i].pageContent}`,
+        pageContent: newContent,
         metadata: {
           ...builder[i].metadata,
           loc: {
@@ -148,5 +143,59 @@ export class TextSplitterNewLine
     }
 
     return builder;
+  }
+
+  getLinesFromPrevChunks(
+    prevChunkLines: string[],
+    currLines: string[],
+  ) {
+    let addedLines = [] as string[];
+
+    for (let j = prevChunkLines.length - 1; j >= 0; j--) {
+      let prevLine = prevChunkLines[j];
+      addedLines.push(prevLine);
+      let newLength = this.getLengthNoWhitespace([...addedLines, ...currLines]);
+
+      if (newLength > this.chunkSize) {
+        // only take a slice from the lastly added line
+        let lastAddedLine = addedLines[addedLines.length - 1]
+        if (!this.countWhiteSpace) lastAddedLine = lastAddedLine.trim()
+        let overflow = newLength - this.chunkSize
+        let sliceAmount = lastAddedLine.length - overflow
+
+        if (sliceAmount <= 0) {
+          // whole new line is overflown
+          addedLines = addedLines.slice(0, -1)
+          // debug(addedLines, currLines, this.chunkSize)
+          break
+        }
+
+        let slice = lastAddedLine.slice(-sliceAmount)
+        addedLines[addedLines.length - 1] = slice
+        // debug(addedLines, currLines, this.chunkSize)
+        break;
+      }
+    }
+
+    return addedLines;
+  }
+
+  getLengthNoWhitespace(lines: string[]) {
+    if (this.countWhiteSpace) return lines.join("\n").length;
+    return getLengthNoWhitespace(lines)
+  };
+}
+
+export const getLengthNoWhitespace = (lines: string[]) => {
+  return lines.reduce((acc, curr) => acc + curr.trim().length, 0) + lines.length - 1;
+}
+
+const debug = (addedLines: string[], currLines: string[], chunkSize: number) => {
+  // debug
+  let fullDoc = [...addedLines, ...currLines].join("\n")
+  let fullDocLength = getLengthNoWhitespace([...addedLines, ...currLines])
+  console.log(`newLength full ${fullDoc.length} no whitespace ${fullDocLength}`);
+  if (fullDoc.length > chunkSize) {
+    let i = 1
   }
 }
