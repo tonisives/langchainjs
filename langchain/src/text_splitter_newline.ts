@@ -190,12 +190,10 @@ export const getLengthNoWhitespace = (lines: string[]) => {
   return lines.reduce((acc, curr) => acc + curr.trim().length, 0) + lines.length - 1;
 }
 
+// @ts-ignore
 const debug = (addedLines: string[], currLines: string[], chunkSize: number) => {
   // debug
   let fullDoc = [...addedLines, ...currLines].join("\n")
   let fullDocLength = getLengthNoWhitespace([...addedLines, ...currLines])
   console.log(`newLength full ${fullDoc.length} no whitespace ${fullDocLength}`);
-  if (fullDoc.length > chunkSize) {
-    let i = 1
-  }
 }

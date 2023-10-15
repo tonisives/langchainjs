@@ -25,6 +25,7 @@ export * from "langchain/vectorstores/prisma";
 export * from "langchain/vectorstores/vectara";
 export * from "langchain/vectorstores/xata";
 export * from "langchain/text_splitter";
+export * from "langchain/text_splitter_newline";
 export * from "langchain/memory";
 export * from "langchain/document";
 export * from "langchain/document_loaders/base";

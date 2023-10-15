@@ -121,6 +121,7 @@
       "src/vectorstores/xata.ts",
       "src/vectorstores/zep.ts",
       "src/text_splitter.ts",
+      "src/text_splitter_newline.ts",
       "src/memory/index.ts",
       "src/memory/zep.ts",
       "src/document.ts",

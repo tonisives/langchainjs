@@ -25,6 +25,7 @@ import * as vectorstores_prisma from "langchain/vectorstores/prisma";
 import * as vectorstores_vectara from "langchain/vectorstores/vectara";
 import * as vectorstores_xata from "langchain/vectorstores/xata";
 import * as text_splitter from "langchain/text_splitter";
+import * as text_splitter_newline from "langchain/text_splitter_newline";
 import * as memory from "langchain/memory";
 import * as document from "langchain/document";
 import * as document_loaders_base from "langchain/document_loaders/base";

@@ -26,6 +26,7 @@ export * as vectorstores__prisma from "../vectorstores/prisma.js";
 export * as vectorstores__vectara from "../vectorstores/vectara.js";
 export * as vectorstores__xata from "../vectorstores/xata.js";
 export * as text_splitter from "../text_splitter.js";
+export * as text_splitter_newline from "../text_splitter_newline.js";
 export * as memory from "../memory/index.js";
 export * as document from "../document.js";
 export * as document_loaders__base from "../document_loaders/base.js";

@@ -25,6 +25,7 @@ const vectorstores_prisma = require("langchain/vectorstores/prisma");
 const vectorstores_vectara = require("langchain/vectorstores/vectara");
 const vectorstores_xata = require("langchain/vectorstores/xata");
 const text_splitter = require("langchain/text_splitter");
+const text_splitter_newline = require("langchain/text_splitter_newline");
 const memory = require("langchain/memory");
 const document = require("langchain/document");
 const document_loaders_base = require("langchain/document_loaders/base");
