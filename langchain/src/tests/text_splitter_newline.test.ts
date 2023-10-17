@@ -84,5 +84,5 @@ const printResultToFile = (fileName: string, docs: Document[]) => {
   }
 
   fs.mkdirSync("./src/tests/results", { recursive: true });
-  fs.writeFileSync(`./src/tests/results/${fileName}.txt`, file);
+  fs.writeFileSync(`./src/tests/results/${fileName.split(".")[1]}.txt`, file);
 };

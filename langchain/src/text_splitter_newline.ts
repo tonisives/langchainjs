@@ -85,9 +85,11 @@ export class TextSplitterNewLine
         lineCounter++;
 
         let currentPageContent = pageContent.join("\n");
+        let overLapReduce = (builder.length > 0 ? this.chunkOverlap : 0)
+        
         let lineWillFillChunk =
           this.getLengthNoWhitespace([...pageContent, line]) >
-          this.chunkSize - this.chunkOverlap;
+          (this.chunkSize - overLapReduce);
 
         // if line + overlap is longer than the chunk, it will be added in next loop with overflown size
         if (lineWillFillChunk && pageContent.length > 0) {
@@ -197,3 +199,4 @@ const debug = (addedLines: string[], currLines: string[], chunkSize: number) => 
   let fullDocLength = getLengthNoWhitespace([...addedLines, ...currLines])
   console.log(`newLength full ${fullDoc.length} no whitespace ${fullDocLength}`);
 }
+
