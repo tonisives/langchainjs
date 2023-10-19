@@ -1,14 +1,15 @@
 import { expect, test } from "@jest/globals";
 import { Document } from "../document.js";
 import fs from "fs";
-import { TextSplitterNewLine, getLengthNoWhitespace } from "../text_splitter_newline.js";
+import { TextSplitterNewLine } from "./text_splitter_newline.js";
+import { getLengthNoWhitespace } from "./utils.js";
 
 test("overlap and lines sol", async () => {
   const splitter = new TextSplitterNewLine({
     chunkSize: 550,
     chunkOverlap: 200,
   });
-  let text = fs.readFileSync("./src/tests/samples/sample.sol").toString();
+  let text = fs.readFileSync("./src/text_splitters.tests/samples/sample.sol").toString();
 
   const docs = await splitter.createDocuments([text], undefined, undefined);
 
@@ -37,7 +38,7 @@ test("overlap and lines md", async () => {
     chunkOverlap: 200,
   });
 
-  let text = fs.readFileSync("./src/tests/samples/sample.md").toString();
+  let text = fs.readFileSync("./src/text_splitters.tests/samples/sample.md").toString();
   const docs = await splitter.createDocuments([text], undefined, undefined);
   printResultToFile("sample.md", docs);
 
@@ -59,7 +60,7 @@ test("adds a slice of line if overlap line too long", async () => {
     chunkOverlap: 200,
   });
 
-  let text = fs.readFileSync("./src/tests/samples/sample.md").toString();
+  let text = fs.readFileSync("./src/text_splitters.tests/samples/sample.md").toString();
   const docs = await splitter.createDocuments([text], undefined, undefined);
 
   verifyMiddleChunksWithCorrectLength(docs, 550);
@@ -75,7 +76,7 @@ const verifyMiddleChunksWithCorrectLength = (docs: Document[], chunkSize: number
   }
 }
 
-const printResultToFile = (fileName: string, docs: Document[]) => {
+const printResultToFile = (fileName: string, docs: Document[], version: string = "v1") => {
   let file = "";
   for (const doc of docs) {
     let metadata = doc.metadata;
@@ -83,6 +84,6 @@ const printResultToFile = (fileName: string, docs: Document[]) => {
     file += `${JSON.stringify(metadata, null, 2)}\n${content}\n`;
   }
 
-  fs.mkdirSync("./src/tests/results", { recursive: true });
-  fs.writeFileSync(`./src/tests/results/${fileName.split(".")[1]}.txt`, file);
+  fs.mkdirSync("./src/text_splitters.tests/results", { recursive: true });
+  fs.writeFileSync(`./src/text_splitters.tests/results/${fileName.split(".")[1]}-${version}.txt`, file);
 };

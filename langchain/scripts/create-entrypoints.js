@@ -106,7 +106,9 @@ const entrypoints = {
   "vectorstores/zep": "vectorstores/zep",
   // text_splitter
   text_splitter: "text_splitter",
-  text_splitter_newline: "text_splitter_newline",
+  text_splitter_newline: "text_splitters/text_splitter_newline",
+  text_splitter_recursive: "text_splitters/text_splitter_recursive",
+  
   // memory
   memory: "memory/index",
   "memory/zep": "memory/zep",

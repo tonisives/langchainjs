@@ -34,3 +34,4 @@ firebase-debug.log
 firestore-debug.log
 tmp/
 langchain/src/tests/results
+langchain/src/text_splitters/tests/results

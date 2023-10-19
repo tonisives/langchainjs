@@ -2,8 +2,12 @@ import {
   RecursiveCharacterTextSplitterParams,
   TextSplitter,
   TextSplitterChunkHeaderOptions,
-} from "./text_splitter.js";
-import { Document } from "./document.js";
+} from "../text_splitter.js";
+import { Document } from "../document.js";
+import { getLengthNoWhitespace } from "./utils.js";
+
+// new line splitter
+// to fill the chunk overlap, it adds characters from the previous chunk
 
 export type TextSplitterNewLineParams = Pick<
   RecursiveCharacterTextSplitterParams,
@@ -86,7 +90,7 @@ export class TextSplitterNewLine
 
         let currentPageContent = pageContent.join("\n");
         let overLapReduce = (builder.length > 0 ? this.chunkOverlap : 0)
-        
+
         let lineWillFillChunk =
           this.getLengthNoWhitespace([...pageContent, line]) >
           (this.chunkSize - overLapReduce);
@@ -129,7 +133,7 @@ export class TextSplitterNewLine
 
       addedLines = addedLines.reverse();
       let newContent = [...addedLines, ...currLines].join("\n");
-      
+
       builder[i] = {
         pageContent: newContent,
         metadata: {
@@ -187,16 +191,3 @@ export class TextSplitterNewLine
     return getLengthNoWhitespace(lines)
   };
 }
-
-export const getLengthNoWhitespace = (lines: string[]) => {
-  return lines.reduce((acc, curr) => acc + curr.trim().length, 0) + lines.length - 1;
-}
-
-// @ts-ignore
-const debug = (addedLines: string[], currLines: string[], chunkSize: number) => {
-  // debug
-  let fullDoc = [...addedLines, ...currLines].join("\n")
-  let fullDocLength = getLengthNoWhitespace([...addedLines, ...currLines])
-  console.log(`newLength full ${fullDoc.length} no whitespace ${fullDocLength}`);
-}
-
