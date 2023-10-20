@@ -35,3 +35,4 @@ firestore-debug.log
 tmp/
 langchain/src/tests/results
 langchain/src/text_splitters/tests/results
+langchain/src/tests/text_splitters/results

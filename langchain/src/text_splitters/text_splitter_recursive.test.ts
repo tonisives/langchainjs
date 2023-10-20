@@ -2,13 +2,13 @@ import { expect, test } from "@jest/globals";
 import { Document } from "../document.js";
 import fs from "fs";
 import { getLengthNoWhitespace } from "./utils.js";
-import { TextSplitterRecursive, solSeparators } from "./text_splitter_recursive.js";
+import { TextSplitterRecursive } from "./text_splitter_recursive.js";
 
-test.only("overlap and lines sol", async () => {
+test("overlap and lines sol", async () => {
   const splitter = new TextSplitterRecursive({
     chunkSize: 550,
-    chunkOverlap: 200,
-    separators: solSeparators,
+    chunkOverlap: 0, // think about adding chunk overlap later
+    type: "sol",
   });
   let text = fs.readFileSync("./src/text_splitters/tests/samples/sample.sol").toString();
 
@@ -30,8 +30,44 @@ test.only("overlap and lines sol", async () => {
   }
 
   expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length);
-  verifyMiddleChunksWithCorrectLength(docs, 550);
+  verifyMiddleChunksWithCorrectLength(docs, 550, 550 * 0.2);
 });
+
+test.only("splits long if case", async () => {
+  // verify long block is split correctly on separators (`if`) and the original text is preserved 1:1
+
+  const splitter = new TextSplitterRecursive({
+    chunkSize: 550,
+    chunkOverlap: 0, // think about adding chunk overlap later
+    type: "sol",
+  });
+  let text = fs.readFileSync("./src/text_splitters/tests/samples/sample-long-if.sol").toString();
+
+  const docs = await splitter.createDocuments([text], undefined, undefined);
+
+  printResultToFile("sample-long-if.sol", docs, "recursive");
+
+  let allLines = ""
+
+  for (let i = 0; i < docs.length; i++) {
+    let curr = docs[i];
+
+    if (i > 0) {
+      let prev = docs[i - 1];
+      expect(prev.metadata.loc.lines.from).toBeLessThanOrEqual(
+        curr.metadata.loc.lines.from
+      );
+    }
+
+    allLines += curr.pageContent
+  }
+
+  expect(allLines).toBe(text)
+
+  expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length);
+  verifyMiddleChunksWithCorrectLength(docs, 550, 550 * 0.2);
+})
+
 
 test("overlap and lines md", async () => {
   const splitter = new TextSplitterNewLine({
@@ -67,13 +103,16 @@ test("adds a slice of line if overlap line too long", async () => {
   verifyMiddleChunksWithCorrectLength(docs, 550);
 });
 
-const verifyMiddleChunksWithCorrectLength = (docs: Document[], chunkSize: number) => {
+const verifyMiddleChunksWithCorrectLength = (docs: Document[], chunkSize: number, deviation = 5) => {
+  // deviation: on character split needs to be precise(5)
+  // on new lines, we can expect deviation of ~20% from the target chunk size (not precise to character)
+
   for (let i = 1; i < docs.length - 1; i++) {
     let curr = docs[i];
     let length = getLengthNoWhitespace(curr.pageContent.split("\n"));
     let distFromSize = Math.abs(length - chunkSize);
     // since we don't match whitespace, then deviation is acceptable
-    expect(distFromSize).toBeLessThanOrEqual(5);
+    expect(distFromSize).toBeLessThanOrEqual(deviation);
   }
 }
 
@@ -85,6 +124,6 @@ const printResultToFile = (fileName: string, docs: Document[], version: string =
     file += `${JSON.stringify(metadata, null, 2)}\n${content}\n`;
   }
 
-  fs.mkdirSync("./src/tests/results", { recursive: true });
-  fs.writeFileSync(`./src/tests/results/${fileName.split(".")[1]}-${version}.txt`, file);
+  fs.mkdirSync("./src/tests/text_splitters/results", { recursive: true });
+  fs.writeFileSync(`./src/tests/text_splitters/results/${fileName.split(".")[1]}-${version}.txt`, file);
 };

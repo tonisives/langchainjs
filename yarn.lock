@@ -14546,6 +14546,7 @@ __metadata:
     axios: ^0.26.0
     binary-extensions: ^2.2.0
     camelcase: 6
+    chalk: ^5.3.0
     cheerio: ^1.0.0-rc.12
     chromadb: ^1.5.3
     cohere-ai: ">=6.0.0"
