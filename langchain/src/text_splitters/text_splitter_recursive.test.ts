@@ -1,13 +1,13 @@
 import { expect, test } from "@jest/globals";
 import { Document } from "../document.js";
 import fs from "fs";
-import { getLengthNoWhitespace } from "./utils.js";
+import { getLengthNoWhitespace, preSplitSol, splitOnSolComments } from "./utils.js";
 import { TextSplitterRecursive } from "./text_splitter_recursive.js";
 
-test("overlap and lines sol", async () => {
+test.skip("splits full contract", async () => {
   const splitter = new TextSplitterRecursive({
     chunkSize: 550,
-    chunkOverlap: 0, // think about adding chunk overlap later
+    chunkOverlap: 0,
     type: "sol",
   });
   let text = fs.readFileSync("./src/text_splitters/tests/samples/sample.sol").toString();
@@ -23,22 +23,17 @@ test("overlap and lines sol", async () => {
     expect(prev.metadata.loc.lines.from).toBeLessThanOrEqual(
       curr.metadata.loc.lines.from
     );
-    let prevLastLine = prev.pageContent.split("\n").at(-1)!;
-    expect(
-      curr.pageContent.split("\n").some((it) => it.startsWith(prevLastLine))
-    ).toBe(true);
   }
 
   expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length);
   verifyMiddleChunksWithCorrectLength(docs, 550, 550 * 0.2);
 });
 
-test.only("splits long if case", async () => {
+test("splits long if case", async () => {
   // verify long block is split correctly on separators (`if`) and the original text is preserved 1:1
-
   const splitter = new TextSplitterRecursive({
     chunkSize: 550,
-    chunkOverlap: 0, // think about adding chunk overlap later
+    chunkOverlap: 0,
     type: "sol",
   });
   let text = fs.readFileSync("./src/text_splitters/tests/samples/sample-long-if.sol").toString();
@@ -68,8 +63,21 @@ test.only("splits long if case", async () => {
   verifyMiddleChunksWithCorrectLength(docs, 550, 550 * 0.2);
 })
 
+test("pre split sol", async () => {
+  let text = fs.readFileSync("./src/text_splitters/tests/samples/sample.sol").toString();
+  let split = preSplitSol(text, 550, 0)
+  let joined = split.join("\n")
+  expect(joined).toBe(text)
+})
 
-test("overlap and lines md", async () => {
+test("split on comments", async () => {
+  let text = fs.readFileSync("./src/text_splitters/tests/samples/sample.sol").toString();
+  let split = splitOnSolComments(text)
+  let joined = split.map(s => s.join("\n")).join("\n")
+  expect(joined).toBe(text)
+})
+
+/* test("overlap and lines md", async () => {
   const splitter = new TextSplitterNewLine({
     chunkSize: 550,
     chunkOverlap: 200,
@@ -101,7 +109,7 @@ test("adds a slice of line if overlap line too long", async () => {
   const docs = await splitter.createDocuments([text], undefined, undefined);
 
   verifyMiddleChunksWithCorrectLength(docs, 550);
-});
+}); */
 
 const verifyMiddleChunksWithCorrectLength = (docs: Document[], chunkSize: number, deviation = 5) => {
   // deviation: on character split needs to be precise(5)

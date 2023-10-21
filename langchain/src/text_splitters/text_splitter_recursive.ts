@@ -4,7 +4,7 @@ import {
   TextSplitterChunkHeaderOptions,
 } from "../text_splitter.js";
 import { Document } from "../document.js";
-import { debugDocBuilder, getLengthNoWhitespace } from "./utils.js";
+import { debugDocBuilder, getLengthNoWhitespace, preSplitSol, splitOnSolComments, willFillChunkSize } from "./utils.js";
 import chalk from "chalk";
 
 // recursive splitter
@@ -112,50 +112,6 @@ export class TextSplitterRecursive
       if (this.debug) debugDocBuilder(builder);
     };
 
-    const splitOnComments = (
-      text: string,
-    ): string[][] => {
-      let builder = [] as string[][]
-      let split = text.split("\n")
-
-      const isBlockCommentStart = (line: string) => line.match(/^(\s+|)\/\*/)
-
-      let isSlashComment = (line: string) => line.match(/^(\s+|)\/{3}/)
-
-      // split according to comments. if the block doesn't fill chunkSize, then ignore splitting for those comments
-
-      let blockBuilder = [] as string[]
-      let prevSlashComment = false
-
-      for (let i = 0; i < split.length; i++) {
-        let line = split[i]
-        blockBuilder.push(line)
-        let isSlashCommentLine = isSlashComment(line)
-
-        if (isSlashCommentLine && !prevSlashComment) {
-          let block = blockBuilder.slice(0, -1)
-          builder.push(block)
-          blockBuilder = [line]
-          prevSlashComment = true
-        }
-        else if (isBlockCommentStart(line)) {
-          let block = blockBuilder.slice(0, -1)
-          builder.push(block)
-          blockBuilder = [line]
-        }
-
-        if (prevSlashComment && !isSlashCommentLine) {
-          prevSlashComment = false
-        }
-      }
-
-      if (blockBuilder.length > 0) {
-        builder.push(blockBuilder)
-      }
-
-      return builder
-    }
-
     const splitOnSeparator = (
       text: string,
       separator: RegExp,
@@ -218,52 +174,11 @@ export class TextSplitterRecursive
       return results
     }
 
-    // split on /// and block comments
-    // if the resulting chunk fills the chunk size, then split with \n until it doesn't.
-    // The next chunk (without comments) will be split recursively later
-    const preSplitSol = (text: string): string[] => {
-      let commentChunks = splitOnComments(text).map(it => it.join("\n"))
-
-      let builder = [] as string[]
-
-      for (let i = 0; i < commentChunks.length; i++) {
-        let chunk = commentChunks[i]
-        let chunkWillFillChunkSize = this.willFillChunkSize(chunk, []); // no overlap reduce
-
-        if (chunkWillFillChunkSize) {
-          let split = chunk.split("\n")
-          let blockBuilder = [] as string[]
-
-          for (let j = 0; j < split.length; j++) {
-            let line = split[j]
-            blockBuilder.push(line)
-            let newLength = this.getLengthNoWhitespace(blockBuilder)
-
-            if (newLength > this.chunkSize) {
-              let block = blockBuilder.slice(0, -1)
-              builder.push(block.join("\n") + "\n")
-
-              // push rest of the lines to the next chunk
-              let rest = split.slice(j)
-              let restChunk = rest.join("\n")
-              builder.push(restChunk)
-              break
-            }
-          }
-        }
-        else {
-          builder.push(chunk)
-        }
-      }
-
-      return builder
-    }
-
     let lineCounter = 1;
     let builder: Document[] = [];
 
     if (this.type === "sol") {
-      let preSplit = preSplitSol(text)
+      let preSplit = preSplitSol(text, this.chunkSize, this.chunkOverlap)
 
       for (let i = 0; i < preSplit.length; i++) {
         let chunkBuilder = [] as Document[]
@@ -283,15 +198,9 @@ export class TextSplitterRecursive
     return builder;
   }
 
-
   willFillChunkSize(chunk: string, builder: any[]) {
-    let overLapReduce = (builder.length > 0 ? this.chunkOverlap : 0);
-
-    let chunkWillFillChunkSize = this.getLengthNoWhitespace(chunk.split("\n")) >
-      (this.chunkSize - overLapReduce);
-    return chunkWillFillChunkSize;
+    return willFillChunkSize(chunk, builder, this.chunkSize, this.chunkOverlap)
   }
-
 
   protected addOverlapFromPreviousChunks(builder: Document[]) {
     if (builder.length <= 1) return builder;
