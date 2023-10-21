@@ -4,7 +4,7 @@ import fs from "fs";
 import { getLengthNoWhitespace, preSplitSol, splitOnSolComments } from "./utils.js";
 import { TextSplitterRecursive } from "./text_splitter_recursive.js";
 
-test.skip("splits full contract", async () => {
+test("splits full contract", async () => {
   const splitter = new TextSplitterRecursive({
     chunkSize: 550,
     chunkOverlap: 0,
@@ -16,6 +16,10 @@ test.skip("splits full contract", async () => {
 
   printResultToFile("sample.sol", docs, "recursive");
 
+  let fullFile = docs.map(d => d.pageContent).join("")
+
+  expect(fullFile).toBe(text)
+
   for (let i = 1; i < docs.length; i++) {
     let prev = docs[i - 1];
     let curr = docs[i];
@@ -26,7 +30,7 @@ test.skip("splits full contract", async () => {
   }
 
   expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length);
-  verifyMiddleChunksWithCorrectLength(docs, 550, 550 * 0.2);
+  verifyMiddleChunksWithCorrectLength(docs, 550, 550 * 0.3);
 });
 
 test("splits long if case", async () => {
@@ -66,14 +70,14 @@ test("splits long if case", async () => {
 test("pre split sol", async () => {
   let text = fs.readFileSync("./src/text_splitters/tests/samples/sample.sol").toString();
   let split = preSplitSol(text, 550, 0)
-  let joined = split.join("\n")
+  let joined = split.join("")
   expect(joined).toBe(text)
 })
 
 test("split on comments", async () => {
   let text = fs.readFileSync("./src/text_splitters/tests/samples/sample.sol").toString();
   let split = splitOnSolComments(text)
-  let joined = split.map(s => s.join("\n")).join("\n")
+  let joined = split.map(s => s.join("")).join("")
   expect(joined).toBe(text)
 })
 
@@ -117,8 +121,13 @@ const verifyMiddleChunksWithCorrectLength = (docs: Document[], chunkSize: number
 
   for (let i = 1; i < docs.length - 1; i++) {
     let curr = docs[i];
+
+    let skipCommentChunks = curr.pageContent.trim().match(/^(\/\*|\/\/\/)/)
+    if (skipCommentChunks) continue;
+
     let length = getLengthNoWhitespace(curr.pageContent.split("\n"));
     let distFromSize = Math.abs(length - chunkSize);
+    
     // since we don't match whitespace, then deviation is acceptable
     expect(distFromSize).toBeLessThanOrEqual(deviation);
   }

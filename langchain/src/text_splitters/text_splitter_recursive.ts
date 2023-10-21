@@ -4,7 +4,7 @@ import {
   TextSplitterChunkHeaderOptions,
 } from "../text_splitter.js";
 import { Document } from "../document.js";
-import { debugDocBuilder, getLengthNoWhitespace, preSplitSol, splitOnSolComments, willFillChunkSize } from "./utils.js";
+import { addToBuilder, debugDocBuilder, getLengthNoWhitespace, preSplitSol, splitOnSolComments, willFillChunkSize } from "./utils.js";
 import chalk from "chalk";
 
 // recursive splitter
@@ -87,31 +87,6 @@ export class TextSplitterRecursive
   }
 
   private async _splitText(text: string): Promise<Document[]> {
-    const addToBuilder = (
-      builder: Document[],
-      pageContent: string,
-    ) => {
-      if (this.debug) console.log(`adding to builder:\n${chalk.blue(pageContent)}`);
-
-      let lineCount = pageContent.split("\n").length - 1
-
-      builder.push({
-        pageContent: pageContent,
-        metadata: {
-          loc: {
-            lines: {
-              from: lineCounter,
-              to: lineCounter + lineCount,
-            },
-          },
-        },
-      });
-
-      lineCounter += lineCount;
-
-      if (this.debug) debugDocBuilder(builder);
-    };
-
     const splitOnSeparator = (
       text: string,
       separator: RegExp,
@@ -124,7 +99,6 @@ export class TextSplitterRecursive
 
       for (let i = 0; i < separatorChunks.length; i++) {
         let chunk = separatorChunks[i];
-
         let chunkWillFillChunkSize = this.willFillChunkSize(chunk, builder);
 
         if (chunkWillFillChunkSize) {
@@ -139,7 +113,7 @@ export class TextSplitterRecursive
         }
         else {
           // add the doc if fits to chunk size
-          addToBuilder(builder, chunk);
+          lineCounter = addToBuilder(builder, chunk, this.debug, lineCounter);
         }
       }
 

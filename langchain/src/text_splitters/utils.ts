@@ -18,6 +18,35 @@ export const debugDocBuilder = (docs: Document[]) => {
   console.log(`current doc builder\n${chalk.yellow(fullDoc)}`)
 }
 
+export const addToBuilder = (
+  builder: Document[],
+  pageContent: string,
+  log: boolean,
+  lineCounter: number
+): number => {
+  if (log) console.log(`adding to builder:\n${chalk.blue(pageContent)}`);
+
+  let lineCount = pageContent.split("\n").length - 1
+
+  builder.push({
+    pageContent: pageContent,
+    metadata: {
+      loc: {
+        lines: {
+          from: lineCounter,
+          to: lineCounter + lineCount,
+        },
+      },
+    },
+  });
+
+  lineCounter += lineCount;
+
+  if (log) debugDocBuilder(builder);
+
+  return lineCounter
+};
+
 export const willFillChunkSize = (chunk: string, builder: any[], chunkSize: number, chunkOverlap: number) => {
   let overLapReduce = (builder.length > 0 ? chunkOverlap : 0);
 
@@ -29,7 +58,7 @@ export const willFillChunkSize = (chunk: string, builder: any[], chunkSize: numb
 // split on /// and block comments and fill the chunk size. leftover is added to the next chunk 
 // and split recursively later
 export const preSplitSol = (text: string, chunkSize: number, chunkOverlap: number): string[] => {
-  let commentChunks = splitOnSolComments(text).map(it => it.join("\n"))
+  let commentChunks = splitOnSolComments(text).map(it => it.join(""))
 
   let builder = [] as string[]
 
@@ -49,11 +78,11 @@ export const preSplitSol = (text: string, chunkSize: number, chunkOverlap: numbe
         if (newLength > chunkSize) {
           let block = blockBuilder.slice(0, -1)
           // need to add \n for the first comment split only
-          builder.push(block.join("\n") + (builder.length === 0 ? "\n" : ""))
+          builder.push(block.join("\n"))
 
           // push rest of the lines to the next chunk
           let rest = split.slice(j)
-          let restChunk = rest.join("\n")
+          let restChunk = "\n" + rest.join("\n")
           builder.push(restChunk)
           break
         }
@@ -106,6 +135,14 @@ export const splitOnSolComments = (
 
   if (blockBuilder.length > 0) {
     builder.push(blockBuilder)
+  }
+
+  builder = builder.map(it => it.map(it => it + "\n"))
+
+  // remove last \n for the last item
+  if (builder.length > 0) {
+    let last = builder[builder.length - 1]
+    last[last.length - 1] = last[last.length - 1].slice(0, -1)
   }
 
   return builder
