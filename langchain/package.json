@@ -1650,10 +1650,15 @@
       "import": "./text_splitter.js",
       "require": "./text_splitter.cjs"
     },
-    "./text_splitter_newline": {
-      "types": "./text_splitter_newline.d.ts",
-      "import": "./text_splitter_newline.js",
-      "require": "./text_splitter_newline.cjs"
+    "./text_splitters/text_splitter_newline": {
+      "types": "./text_splitters/text_splitter_newline.d.ts",
+      "import": "./text_splitters/text_splitter_newline.js",
+      "require": "./text_splitters/text_splitter_newline.cjs"
+    },
+    "./text_splitters/text_splitter_recursive": {
+      "types": "./text_splitters/text_splitter_recursive.d.ts",
+      "import": "./text_splitters/text_splitter_recursive.js",
+      "require": "./text_splitters/text_splitter_recursive.cjs"
     },
     "./memory": {
       "types": "./memory.d.ts",

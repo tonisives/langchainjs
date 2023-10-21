@@ -84,7 +84,7 @@ describe("sol", () => {
 })
 
 describe("md", () => {
-  test.only("test md", async () => {
+  test("test md", async () => {
     const splitter = new TextSplitterRecursive({
       chunkSize: 550,
       chunkOverlap: 0,
