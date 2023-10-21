@@ -83,14 +83,15 @@ describe("sol", () => {
   })
 })
 
-/* describe("md", () => {
-  test("overlap and lines md", async () => {
-    const splitter = new TextSplitterNewLine({
+describe("md", () => {
+  test.only("test md", async () => {
+    const splitter = new TextSplitterRecursive({
       chunkSize: 550,
-      chunkOverlap: 200,
+      chunkOverlap: 0,
+      type: "md",
     });
 
-    let text = fs.readFileSync("./src/tests/samples/sample.md").toString();
+    let text = fs.readFileSync("./src/text_splitters/tests/samples/sample.md").toString();
     const docs = await splitter.createDocuments([text], undefined, undefined);
     printResultToFile("sample.md", docs);
 
@@ -104,22 +105,9 @@ describe("sol", () => {
     }
 
     expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length);
+
   });
-
-  test("adds a slice of line if overlap line too long", async () => {
-    const splitter = new TextSplitterNewLine({
-      chunkSize: 550,
-      chunkOverlap: 200,
-    });
-
-    let text = fs.readFileSync("./src/tests/samples/sample.md").toString();
-    const docs = await splitter.createDocuments([text], undefined, undefined);
-
-    verifyMiddleChunksWithCorrectLength(docs, 550);
-  });
-
-}) */
-
+})
 
 const verifyMiddleChunksWithCorrectLength = (docs: Document[], chunkSize: number, deviation = 5) => {
   // deviation: on character split needs to be precise(5)
@@ -147,6 +135,6 @@ const printResultToFile = (fileName: string, docs: Document[], version: string =
     file += `${JSON.stringify(metadata, null, 2)}\n${content}\n`;
   }
 
-  fs.mkdirSync("./src/tests/text_splitters/results", { recursive: true });
-  fs.writeFileSync(`./src/tests/text_splitters/results/${fileName.split(".")[1]}-${version}.txt`, file);
+  fs.mkdirSync("./src/text_splitters/tests/results", { recursive: true });
+  fs.writeFileSync(`./src/text_splitters/tests/results/${fileName.split(".")[1]}-${version}.txt`, file);
 };

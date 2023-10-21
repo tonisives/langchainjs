@@ -4,8 +4,7 @@ import {
   TextSplitterChunkHeaderOptions,
 } from "../text_splitter.js";
 import { Document } from "../document.js";
-import { addToBuilder, debugDocBuilder, getLengthNoWhitespace, preSplitSol, splitOnSolComments, willFillChunkSize } from "./utils.js";
-import chalk from "chalk";
+import { addToBuilder, getLengthNoWhitespace, preSplitSol, willFillChunkSize } from "./utils.js";
 
 // recursive splitter
 
@@ -54,6 +53,8 @@ export class TextSplitterRecursive
     else {
       this.separators = fields?.separators ?? []
     }
+
+    if (this.type === "custom" && this.separators.length < 1) throw new Error("Please use md or sol separator or include custom separators")
   }
 
   async createDocuments(
@@ -112,6 +113,7 @@ export class TextSplitterRecursive
           }
         }
         else {
+          if (this.debug) console.log(`separator: ${separator}`)
           // add the doc if fits to chunk size
           lineCounter = addToBuilder(builder, chunk, this.debug, lineCounter);
         }
@@ -165,8 +167,8 @@ export class TextSplitterRecursive
     }
     else {
       let docs = splitOnSeparator(text, this.separators[0], builder);
-      let withOverlap = this.addOverlapFromPreviousChunks(docs);
-      return withOverlap;
+      // let withOverlap = this.addOverlapFromPreviousChunks(docs);
+      return docs;
     }
 
     return builder;
@@ -253,27 +255,27 @@ const baseSeparators = [
 
 // this does not include the \n. It can be used to join lines later with included \n
 const newLineRegex = (regex: string) => {
-  return new RegExp(`(?<=\n)(?=\s+${regex})`, "g")
+  return new RegExp(`(?<=\n)(?=(\s+|)${regex})`, "g")
 }
 
 export const solSeparators = [
-  // // Split along compiler informations definitions
-  // /\n(\s+|)pragma /,
-  // /\n(\s+|)using /,
+  // Split along compiler informations definitions
+  newLineRegex("pragma "),
+  newLineRegex("using "),
 
-  // // Split along contract definitions
-  // /\n(\s+|)contract /,
-  // /\n(\s+|)interface /,
-  // /\n(\s+|)library /,
-  // // Split along method definitions
-  // /\n(\s+|)constructor /,
-  // /\n(\s+|)type /,
-  // /\n(\s+|)function /,
-  // /\n(\s+|)event /,
-  // /\n(\s+|)modifier /,
-  // /\n(\s+|)error /,
-  // /\n(\s+|)struct /,
-  // /\n(\s+|)enum /,
+  // Split along contract definitions
+  newLineRegex("contract "),
+  newLineRegex("interface "),
+  newLineRegex("library "),
+  // Split along method definitions
+  newLineRegex("constructor "),
+  newLineRegex("type "),
+  newLineRegex("function "),
+  newLineRegex("event "),
+  newLineRegex("modifier "),
+  newLineRegex("error "),
+  newLineRegex("struct "),
+  newLineRegex("enum "),
   // Split along control flow statements
   newLineRegex("if "),
   newLineRegex("for "),
@@ -286,23 +288,22 @@ export const solSeparators = [
 
 export const mdSeparators = [
   // First, try to split along Markdown headings
-  /\n(\s+|)# /,
-  /\n(\s+|)## /,
-  /\n(\s+|)### /,
-  /\n(\s+|)#### /,
-  /\n(\s+|)##### /,
-  /\n(\s+|)###### /,
+  newLineRegex("# "),
+  newLineRegex("## "),
+  newLineRegex("### "),
+  newLineRegex("#### "),
+  newLineRegex("##### "),
+  newLineRegex("###### "),
   // Note the alternative syntax for headings (below) is not handled here
   // Heading level 2
   // ---------------
   // End of code block
-  /```\n\n/,
+  newLineRegex("```\n\n"),
   // Horizontal lines
-  /\n(\s+|)\n\*\*\*\n\n/,
-  /\n(\s+|)\n---\n\n/,
-  /\n(\s+|)\n___\n\n/,
+  newLineRegex("\\*{3}\n\n"),
+  newLineRegex("---\n\n"),
+  newLineRegex("___\n\n"),
   // Note that this splitter doesn't handle horizontal lines defined
   // by *three or more* of ***, ---, or ___, but this is not handled
-  /\n(\s+|)\n/,
   ...baseSeparators,
 ];
