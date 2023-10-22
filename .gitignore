@@ -36,3 +36,4 @@ tmp/
 langchain/src/tests/results
 langchain/src/text_splitters/tests/results
 langchain/src/tests/text_splitters/results
+langchain/text_splitter_newline.*

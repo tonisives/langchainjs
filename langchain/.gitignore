@@ -265,9 +265,12 @@ vectorstores/zep.d.ts
 text_splitter.cjs
 text_splitter.js
 text_splitter.d.ts
-text_splitter_newline.cjs
-text_splitter_newline.js
-text_splitter_newline.d.ts
+text_splitters/text_splitter_newline.cjs
+text_splitters/text_splitter_newline.js
+text_splitters/text_splitter_newline.d.ts
+text_splitters/text_splitter_recursive.cjs
+text_splitters/text_splitter_recursive.js
+text_splitters/text_splitter_recursive.d.ts
 memory.cjs
 memory.js
 memory.d.ts
