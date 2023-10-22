@@ -32,6 +32,8 @@ export class RecursiveUrlLoader
   private preventOutside: boolean;
 
   private debug: boolean;
+  
+  private loaded = new Set<string>();
 
   constructor(url: string, options: RecursiveUrlLoaderOptions) {
     super();
@@ -55,6 +57,12 @@ export class RecursiveUrlLoader
     resource: string,
     options: { timeout: number } & RequestInit
   ): Promise<Response> {
+    if (this.loaded.has(resource)) {
+      return new Response();
+    }
+
+    this.loaded.add(resource);
+
     const { timeout, ...rest } = options;
     return this.caller.call(() =>
       fetch(resource, { ...rest, signal: AbortSignal.timeout(timeout) })

@@ -26,6 +26,7 @@ export type TextSplitterRecursiveParams = Pick<
   type: TextSplitterRecursiveType; // if defined, don't need to set separators for md and sol
   countWhiteSpace?: boolean;
   separators?: RegExp[]
+  debug?: boolean
 }
 
 export class TextSplitterRecursive
@@ -35,12 +36,13 @@ export class TextSplitterRecursive
   countWhiteSpace: boolean = false;
   separators: RegExp[] = []
   type: TextSplitterRecursiveType = "custom";
-  debug = true
+  debug: boolean = false
 
   constructor(fields?: Partial<TextSplitterRecursiveParams>) {
     super(fields);
     this.countWhiteSpace = fields?.countWhiteSpace ?? false;
     this.type = fields?.type ?? "custom";
+    this.debug = fields?.debug ?? false
 
     if (!fields?.separators && fields?.type !== "custom") {
       if (fields?.type === "sol") {
@@ -100,7 +102,7 @@ export class TextSplitterRecursive
 
       for (let i = 0; i < separatorChunks.length; i++) {
         let chunk = separatorChunks[i];
-        let chunkWillFillChunkSize = this.willFillChunkSize(chunk, builder);
+        let chunkWillFillChunkSize = this.willFillChunkSize(chunk, []); // splitAndMerge uses [] as builder
 
         if (chunkWillFillChunkSize) {
           if (i === 0) {
@@ -174,6 +176,7 @@ export class TextSplitterRecursive
     return builder;
   }
 
+  // @param builder - first chunks does not add overlap 
   willFillChunkSize(chunk: string, builder: any[]) {
     return willFillChunkSize(chunk, builder, this.chunkSize, this.chunkOverlap)
   }
@@ -249,6 +252,7 @@ export class TextSplitterRecursive
 }
 
 const baseSeparators = [
+  // split on \n and keep the \n separator
   /(?<=\n)/,
   /(?<=\s)/,
 ]

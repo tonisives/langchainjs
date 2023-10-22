@@ -42,7 +42,7 @@ export const addToBuilder = (
 
   lineCounter += lineCount;
 
-  if (log) debugDocBuilder(builder);
+  // if (log) debugDocBuilder(builder);
 
   return lineCounter
 };
