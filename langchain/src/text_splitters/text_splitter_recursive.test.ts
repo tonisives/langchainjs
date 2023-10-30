@@ -117,6 +117,36 @@ describe("md", () => {
 
     let text = fs.readFileSync("./src/text_splitters/tests/samples/readme.md").toString();
     const docs = await splitter.createDocuments([text], undefined, undefined);
+
+    for (let i = 1; i < docs.length; i++) {
+      let prev = docs[i - 1];
+      let curr = docs[i];
+
+      expect(prev.metadata.loc.lines.from).toBeLessThanOrEqual(
+        curr.metadata.loc.lines.from
+      );
+    }
+
+    expect(docs.at(-1)?.metadata.loc.lines.to).toBe(text.split("\n").length);
+  });
+
+  test("test ethena", async () => {
+    // this one splits until the \n    
+    const splitter = new TextSplitterRecursive({
+      chunkSize: 450,
+      type: "md",
+    });
+
+    let text = fs.readFileSync("./src/text_splitters/tests/samples/ethena.md").toString();
+    let doc: Document = {
+      pageContent: text,
+      metadata: {
+        source: "url.com",
+        loc: undefined
+      }
+    }
+
+    const docs = await splitter.splitDocuments([doc]);
     printResultToFile("readme.md", docs);
 
     for (let i = 1; i < docs.length; i++) {

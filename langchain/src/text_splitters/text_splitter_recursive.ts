@@ -74,8 +74,8 @@ export class TextSplitterRecursive
         docs.map((it) => ({
           ...it,
           metadata: {
-            ...it.metadata,
             ...metadatas[builder.length],
+            ...it.metadata,
           },
         }))
       );
