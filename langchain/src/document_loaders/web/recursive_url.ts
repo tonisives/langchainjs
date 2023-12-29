@@ -68,7 +68,7 @@ export class RecursiveUrlLoader
   private getChildLinks(html: string, baseUrl: string): Array<string> {
     const allLinks = Array.from(
       new JSDOM(html).window.document.querySelectorAll("a")
-    ).map((a) => a.href);
+    ).map((a) => a.href).filter(it => it !== undefined)
     const absolutePaths = [];
     // eslint-disable-next-line no-script-url
     const invalidPrefixes = ["javascript:", "mailto:", "#"];
