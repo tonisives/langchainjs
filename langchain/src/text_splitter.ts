@@ -143,10 +143,13 @@ export abstract class TextSplitter
 
         pageContent += chunk;
         documents.push(
-          new Document({
-            pageContent,
-            metadata: metadataWithLinesNumber,
-          })
+          this.fixLoc(
+            new Document({
+              pageContent,
+              metadata: metadataWithLinesNumber,
+            }),
+            text
+          )
         );
         lineCounterIndex += newLinesCount;
         prevChunk = chunk;
@@ -174,7 +177,7 @@ export abstract class TextSplitter
   }
 
   private joinDocs(docs: string[], separator: string): string | null {
-    const text = docs.join(separator).trim();
+    const text = docs.join(separator);
     return text === "" ? null : text;
   }
 
@@ -219,6 +222,100 @@ which is longer than the specified ${this.chunkSize}`
       docs.push(doc);
     }
     return docs;
+  }
+  // find the correct loc by brute force
+  private fixLoc(document: Document, fullText: string): Document {
+    let pageContent = document.pageContent;
+
+    // find all the matching page contents in the original text
+    let matches = this.findSubstrings(fullText, pageContent);
+
+    // now find the line numbers for these characters
+    let pageContentCounter = 0;
+    let lineNr = 1;
+    let lineStart = -1;
+    let currentMatchCharIndex: number = Number.MAX_SAFE_INTEGER;
+    let matchedLines: { from: number; to: number }[] = [];
+
+    for (let i = 0; i < fullText.length; i++) {
+      if (matches.some((matchCharIndex) => matchCharIndex === i)) {
+        lineStart = lineNr;
+        currentMatchCharIndex = i;
+      }
+
+      if (
+        i >= currentMatchCharIndex &&
+        i < currentMatchCharIndex + pageContent.length
+      ) {
+        pageContentCounter++;
+
+        if (pageContentCounter === pageContent.length) {
+          let lineEnd = lineNr;
+          if (fullText[i] === "\n") {
+            matchedLines.push({ from: lineStart, to: lineEnd + 1 });
+          }
+          {
+            matchedLines.push({ from: lineStart, to: lineEnd });
+          }
+
+          pageContentCounter = 0;
+          currentMatchCharIndex = -1;
+        }
+      }
+
+      if (fullText[i] === "\n") {
+        lineNr++;
+      }
+    }
+
+    let docMiddle =
+      document.metadata.loc.lines.from +
+      Math.floor(
+        (document.metadata.loc.lines.to - document.metadata.loc.lines.from) / 2
+      );
+
+    // out of these matches, find the closest one to the docMiddle
+    let closestMatch = matchedLines[0];
+    for (let i = 1; i < matchedLines.length; i++) {
+      let match = matchedLines[i];
+      let matchMiddle = match.from + Math.floor((match.to - match.from) / 2);
+      let closestMiddle = closestMatch.from + Math.floor((closestMatch.to - closestMatch.from) / 2);
+      if (
+        Math.abs(matchMiddle - docMiddle) <
+        Math.abs(closestMiddle - docMiddle)
+      ) {
+        closestMatch = match;
+      }
+    }
+
+    if (!closestMatch) {
+      // this happened with a chunk header
+      return document;
+    }
+
+    return new Document({
+      pageContent,
+      metadata: {
+        ...document.metadata,
+        loc: {
+          ...document.metadata.loc,
+          lines: {
+            from: closestMatch.from,
+            to: closestMatch.to,
+          },
+        },
+      },
+    });
+  }
+
+  private findSubstrings(str: string, subStr: string) {
+    let indices = [];
+    let idx = str.indexOf(subStr);
+    while (idx != -1) {
+      indices.push(idx);
+      idx = str.indexOf(subStr, idx + 1);
+    }
+    return indices;
   }
 }
 
